@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: cliproxyapi
+    env: docker
+    autoDeploy: true
+    disk:
+      name: cliproxyapi-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: DEPLOY
+        value: cloud
+      - key: CONFIG_PATH
+        value: /data/config.yaml
+      - key: AUTH_DIR
+        value: /data/auths
+      - key: WRITABLE_PATH
+        value: /data

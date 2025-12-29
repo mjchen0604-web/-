@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MJ3GC 用户中心</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #e6e9f2;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1e80ff;
+      --primary-dark: #175cd3;
+      --success: #16a34a;
+      --danger: #ef4444;
+      --shadow: 0 10px 24px rgba(20, 40, 90, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    header .nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+    }
+    header a {
+      text-decoration: none;
+      color: var(--primary);
+    }
+    main {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 20px 40px;
+      display: grid;
+      gap: 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .muted { color: var(--muted); font-size: 12px; }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+    }
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(30,128,255,0.15); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn:hover { background: var(--primary-dark); }
+    .status {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(30,128,255,0.08);
+      color: var(--primary);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; }
+    .log-box {
+      background: #0b1220;
+      color: #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 240px;
+      max-height: 360px;
+      overflow: auto;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+    .flex { display: flex; align-items: center; gap: 12px; }
+    .spacer { flex: 1; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>MJ3GC 用户中心</h1>
+      <div class="muted">仅支持 API Key 登录，查看额度与日志</div>
+    </div>
+    <div class="nav">
+      <span id="status" class="status">未连接</span>
+      <a href="/management.html" target="_self">前往管理员面板</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>连接信息</h2>
+      <div class="row">
+        <div>
+          <label>API Key</label>
+          <input id="apiKey" placeholder="请输入你的 API Key" />
+        </div>
+        <div>
+          <label>API 基础地址（可选）</label>
+          <input id="baseUrl" placeholder="默认使用当前域名" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn" id="btnConnect">加载数据</button>
+        </div>
+      </div>
+      <div class="muted">API Key 用于读取你的额度与日志，不会提交账号密码。</div>
+    </section>
+
+    <section class="card">
+      <h2>额度概览</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>标签</th>
+            <th>API Key</th>
+            <th>总次数上限</th>
+            <th>已用</th>
+            <th>剩余</th>
+            <th>并发上限</th>
+          </tr>
+        </thead>
+        <tbody id="usageBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="flex">
+        <h2 style="margin:0;">调用日志</h2>
+        <div class="spacer"></div>
+        <label class="muted" style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" id="autoScroll" checked /> 自动滚动
+        </label>
+      </div>
+      <div id="logBox" class="log-box"></div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      key: localStorage.getItem('mj3gc_portal_key') || '',
+      base: localStorage.getItem('mj3gc_portal_base') || '',
+      since: 0
+    };
+
+    const $ = (q) => document.querySelector(q);
+
+    function setStatus(text, ok) {
+      const el = $('#status');
+      el.textContent = text;
+      el.style.color = ok ? '#1e80ff' : '#ef4444';
+      el.style.background = ok ? 'rgba(30,128,255,0.08)' : 'rgba(239,68,68,0.1)';
+    }
+
+    function baseUrl() {
+      const manual = $('#baseUrl').value.trim();
+      return manual || window.location.origin;
+    }
+
+    async function apiFetch(path, options = {}) {
+      const key = $('#apiKey').value.trim();
+      if (!key) throw new Error('请先填写 API Key');
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      headers['Authorization'] = 'Bearer ' + key;
+      const res = await fetch(baseUrl() + path, { ...options, headers });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || '请求失败');
+      }
+      return res.json();
+    }
+
+    function renderUsage(keys) {
+      const tbody = $('#usageBody');
+      tbody.innerHTML = '';
+      keys.forEach((k) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${k.label || '-'}</td>
+          <td>${k.key || '-'}</td>
+          <td>${k.total_limit || 0}</td>
+          <td>${k.used_count || 0}</td>
+          <td>${k.remaining || 0}</td>
+          <td>${k.concurrency_limit || 0}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadUsage() {
+      const usage = await apiFetch('/v0/portal/usage');
+      renderUsage(usage.keys || []);
+    }
+
+    async function pollLogs() {
+      const data = await apiFetch(`/v0/portal/logs?since=${state.since}&limit=200`);
+      const logs = data.logs || [];
+      if (logs.length > 0) {
+        const lines = logs.map((log) => {
+          const dt = new Date(log.timestamp * 1000).toLocaleString();
+          return `[${dt}] ${log.model} tokens=${log.tokens.total_tokens || 0} failed=${log.failed}`;
+        });
+        const box = $('#logBox');
+        box.textContent = box.textContent + '\n' + lines.join('\n');
+        state.since = Math.max(...logs.map((l) => l.timestamp));
+        if ($('#autoScroll').checked) box.scrollTop = box.scrollHeight;
+      }
+    }
+
+    async function connect() {
+      state.key = $('#apiKey').value.trim();
+      state.base = $('#baseUrl').value.trim();
+      localStorage.setItem('mj3gc_portal_key', state.key);
+      localStorage.setItem('mj3gc_portal_base', state.base);
+      await loadUsage();
+      await pollLogs();
+      setStatus('已连接', true);
+    }
+
+    $('#apiKey').value = state.key;
+    $('#baseUrl').value = state.base;
+
+    $('#btnConnect').addEventListener('click', async () => {
+      try {
+        await connect();
+      } catch (err) {
+        setStatus('连接失败', false);
+        alert(err.message || '连接失败');
+      }
+    });
+
+    setInterval(() => {
+      if (!$('#apiKey').value.trim()) return;
+      pollLogs();
+    }, 4000);
+  </script>
+</body>
+</html>
